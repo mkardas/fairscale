@@ -1671,6 +1671,13 @@ class FullyShardedDataParallel(nn.Module):
         if not self._require_backward_grad_sync:
             return
 
+        if (
+            self.reshard_after_forward
+            and self._fsdp_forward_ordering is not None
+            and self._my_fsdp_instance_idx is not None and self._my_fsdp_instance_idx > 0
+        ):
+            self._fsdp_forward_ordering[self._my_fsdp_instance_idx - 1]._rebuild_full_params()
+
         # Wait for all work in the current stream to finish, then start the
         # reductions in post_backward stream.
         self._streams["post_backward"].wait_stream(torch.cuda.current_stream())
